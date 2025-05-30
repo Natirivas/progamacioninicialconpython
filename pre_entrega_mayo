@@ -1,0 +1,27 @@
+while True:
+    print("**** sistema de gestion ****")
+    print("1) para agregar")
+    print("2) para listar")
+    print("3) para remover")
+    print("4) para salir")
+    print("****************************")
+    
+    usuario = input("elija su opcion (1-4): ")
+    if usuario == "4":
+        break
+    elif usuario == "1":
+productos =input("producto a agregar:")
+productos.append(producto)
+    print(f"se agrego (producto)")
+    print(f= "la lista contiene: (productos" )
+    elif usuario == "2":
+    print ("lista de productos:")
+    print(productos)
+for articulo in productos:
+    print(productos)
+    elif usuario == "3":
+remover = input ("producto a remover:  ")
+productos.remove(remover)
+print(f"se removió (remover)")
+print("")
+print("")
