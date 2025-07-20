@@ -1,3 +1,36 @@
+
+
+import sqlite3 #motor integrado para bdd. 
+
+def crear_base_de_datos():
+    """
+    Crea la base de datos 'inventario.db' y la tabla 'productos'
+    si no existen.
+    """
+    try:
+        with sqlite3.connect('inventario.db') as conn:
+            cursor = conn.cursor()
+
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS productos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nombre TEXT NOT NULL,
+                    descripcion TEXT,
+                    cantidad INTEGER NOT NULL,
+                    precio REAL NOT NULL,
+                    categoria TEXT
+                )
+            ''')
+            conn.commit()
+            print("Base de datos 'inventario.db' y tabla 'productos' creadas/verificadas exitosamente.")
+
+    except sqlite3.Error as e:
+        print(f"Error al conectar o crear la base de datos: {e}")
+
+if __name__ == "__main__":
+    crear_base_de_datos()
+
+#acá el código de las funciones y menú
 productos = [] # lista de productos vacía.
 
 # --- Función para actualizar la base ---
