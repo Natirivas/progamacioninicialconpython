@@ -1,16 +1,10 @@
+import sqlite3
 
-
-import sqlite3 #motor integrado para bdd. 
-
+# --- Función para crear la base de datos (generalmente se ejecuta una vez) ---
 def crear_base_de_datos():
-    """
-    Crea la base de datos 'inventario.db' y la tabla 'productos'
-    si no existen.
-    """
     try:
         with sqlite3.connect('inventario.db') as conn:
             cursor = conn.cursor()
-
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS productos (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,81 +16,288 @@ def crear_base_de_datos():
                 )
             ''')
             conn.commit()
-            print("Base de datos 'inventario.db' y tabla 'productos' creadas/verificadas exitosamente.")
-
+            # print("Base de datos 'inventario.db' y tabla 'productos' creadas/verificadas exitosamente.")
     except sqlite3.Error as e:
         print(f"Error al conectar o crear la base de datos: {e}")
 
-if __name__ == "__main__":
-    crear_base_de_datos()
+# --- Funciones de interacción con la base de datos ---
 
-#acá el código de las funciones y menú
-productos = [] # lista de productos vacía.
-
-# --- Función para actualizar la base ---
-def actualizar_base(productos_a_guardar): 
-    # Todo lo que está dentro de la función 'actualizar_base' debe ir indentado
-    with open("base.txt", "w") as base: 
-        for producto in productos_a_guardar: # Segundo nivel de indentación (dentro del 'with' y del 'for')
-            base.write(f"{producto}\n") # Tercer nivel de indentación (dentro del 'for')
-
-# --- Función para cargar productos al inicio del programa 
-def cargar_productos_desde_base():
+def agregar_producto_db(nombre, descripcion, cantidad, precio, categoria):
     try:
-        with open("base.txt", "r") as base:
-            return base.read().splitlines()
-    except FileNotFoundError:
-        return [] # Si el archivo no existe, devuelve una lista vacía
+        with sqlite3.connect('inventario.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                INSERT INTO productos (nombre, descripcion, cantidad, precio, categoria)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (nombre, descripcion, cantidad, precio, categoria))
+            conn.commit()
+            print(f"Producto '{nombre}' agregado exitosamente.")
+    except sqlite3.Error as e:
+        print(f"Error al agregar producto: {e}")
 
-# Cargamos los productos al iniciar el programa
-productos = cargar_productos_desde_base()
+def ver_productos_db():
+    try:
+        with sqlite3.connect('inventario.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, nombre, descripcion, cantidad, precio, categoria FROM productos')
+            productos = cursor.fetchall() # Obtiene todos los resultados
+            return productos
+    except sqlite3.Error as e:
+        print(f"Error al obtener productos: {e}")
+        return []
 
-# --- Menú principal del programa ---
-while True: # Todo lo que se ejecuta dentro del 'while' debe ir indentado!!! :(
-    print("\n ***Menú Inventario: Ingrese la opción deseada***") # Primer nivel de indentación dentro del 'while'
-    print("1- agregar producto")
-    print("2- ver productos")
-    print("3- salir")
-    print("4- eliminar productos")
-    print("5- buscar productos")
-
-    opcion = input(" Ingrese Opción:")
-
-    match opcion: # El 'match' va identado al mismo nivel que los 'print' y el 'input' de arriba
-        case "1": # Este 'case' debe ir un nivel más adentro que el 'match'
-            nuevo_producto = (input("Ingrese el nombre del producto:")).strip() # Lo que pasa en 'case "1"'
-            productos.append(nuevo_producto) # Indentado un nivel más que el 'case'
-            print(f"Producto '{nuevo_producto}' agregado.") 
-            actualizar_base(productos) # Llamamos a la función y le pasamos la lista 'productos'
-
-        case "2": # Este 'case' está al mismo nivel que el 'case "1"'
-            print("\nLista de productos:")
-            if productos: # Agregamos una comprobación para ver si hay productos
-                for producto in productos: # Indentado un nivel más que el 'case'
-                    print(f" - {producto}") # Indentado un nivel más que el 'for'
+def eliminar_producto_db(id_producto):
+    try:
+        with sqlite3.connect('inventario.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('DELETE FROM productos WHERE id = ?', (id_producto,))
+            conn.commit()
+            if cursor.rowcount > 0: # Verifica si se eliminó alguna fila
+                print(f"Producto con ID {id_producto} eliminado exitosamente.")
             else:
-                print("No hay productos en el inventario.") # Si no hay productos
+                print(f"No se encontró un producto con ID {id_producto}.")
+    except sqlite3.Error as e:
+        print(f"Error al eliminar producto: {e}")
 
-        case "3": # Este 'case' está al mismo nivel que los demás
-            print("Saliendo del programa. ¡Hasta luego!")
-            break # Este 'break' está indentado un nivel más que el 'case'
-
-        case "4": # Este 'case' está al mismo nivel que los demás
-            eliminar_producto = input("Ingrese el nombre del producto a eliminar:").strip()
-            if eliminar_producto in productos: # Indentado un nivel más que el 'case'
-                productos.remove(eliminar_producto)
-                print(f"Producto '{eliminar_producto}' eliminado.")
-                actualizar_base(productos) # Actualiza la base después de eliminar
-            else: # El 'else' debe ir alineado con el 'if'
-                print(f"Producto '{eliminar_producto}' no encontrado.")
-
-        case "5": # Este 'case' está al mismo nivel que los demás
-            buscar = input("Ingrese el nombre del producto a buscar: ").strip()
-            if buscar in productos: # Indentado un nivel más que el 'case'
-                print(f"Producto '{buscar}' en stock.")
-            else: # El 'else' debe ir alineado con el 'if'
-                print(f"Producto '{buscar}' no encontrado.")
-
-        case _: # Este 'case'  está al mismo nivel que los demás
-            print("Opción inválida. Indique una opción válida.") 
+def buscar_producto_db(criterio, valor):
+    """
+    Busca productos por 'id' o 'nombre'.
+    criterio: 'id' o 'nombre'
+    valor: el valor a buscar
+    """
+    try:
+        with sqlite3.connect('inventario.db') as conn:
+            cursor = conn.cursor()
+            if criterio == 'id':
+                cursor.execute('SELECT id, nombre, descripcion, cantidad, precio, categoria FROM productos WHERE id = ?', (valor,))
+            elif criterio == 'nombre':
+                cursor.execute('SELECT id, nombre, descripcion, cantidad, precio, categoria FROM productos WHERE nombre LIKE ?', ('%' + valor + '%',))
+            else:
+                print("Criterio de búsqueda inválido.")
+                return []
             
+            resultados = cursor.fetchall()
+            return resultados
+    except sqlite3.Error as e:
+        print(f"Error al buscar producto: {e}")
+        return []
+
+# --- NUEVAS FUNCIONES PARA ACTUALIZAR Y REPORTE ---
+
+def actualizar_producto_db(id_producto, nuevo_nombre, nueva_descripcion, nueva_cantidad, nuevo_precio, nueva_categoria):
+    try:
+        with sqlite3.connect('inventario.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE productos
+                SET nombre = ?, descripcion = ?, cantidad = ?, precio = ?, categoria = ?
+                WHERE id = ?
+            ''', (nuevo_nombre, nueva_descripcion, nueva_cantidad, nuevo_precio, nueva_categoria, id_producto))
+            conn.commit()
+            if cursor.rowcount > 0:
+                print(f"Producto con ID {id_producto} actualizado exitosamente.")
+            else:
+                print(f"No se encontró un producto con ID {id_producto} para actualizar.")
+    except sqlite3.Error as e:
+        print(f"Error al actualizar producto: {e}")
+    except ValueError:
+        print("Error: La cantidad y el precio deben ser números válidos.")
+
+def reporte_bajo_stock_db(limite_cantidad):
+    try:
+        with sqlite3.connect('inventario.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, nombre, cantidad FROM productos WHERE cantidad <= ?', (limite_cantidad,))
+            productos_bajo_stock = cursor.fetchall()
+            return productos_bajo_stock
+    except sqlite3.Error as e:
+        print(f"Error al generar reporte de bajo stock: {e}")
+        return []
+
+# --- Ejecutar la creación de la base de datos al inicio ---
+if __name__ == "__main__":
+    crear_base_de_datos() # Aseguramos que la DB y tabla existan al iniciar el programa
+
+    # --- Menú principal del programa ---
+    while True:
+        print("\n ***Menú Inventario: Ingrese la opción deseada***")
+        print("1- Agregar producto")
+        print("2- Ver productos")
+        print("3- Salir")
+        print("4- Eliminar producto (por ID)")
+        print("5- Buscar producto (por ID o nombre)")
+        print("6- Actualizar producto (por ID)") # Nueva opción
+        print("7- Reporte de bajo stock")     # Nueva opción
+
+        opcion = input(" Ingrese Opción: ").strip() # strip() para limpiar el input
+
+        match opcion:
+            case "1":
+                print("\n--- Agregar Nuevo Producto ---")
+                nombre = input("Nombre: ").strip()
+                if not nombre:
+                    print("El nombre no puede estar vacío.")
+                    continue
+                descripcion = input("Descripción (opcional): ").strip()
+                try:
+                    cantidad = int(input("Cantidad: "))
+                    if cantidad < 0: raise ValueError
+                except ValueError:
+                    print("Cantidad inválida. Debe ser un número entero positivo.")
+                    continue
+                try:
+                    precio = float(input("Precio: "))
+                    if precio < 0: raise ValueError
+                except ValueError:
+                    print("Precio inválido. Debe ser un número (ej. 10.50).")
+                    continue
+                categoria = input("Categoría (opcional): ").strip()
+
+                agregar_producto_db(nombre, descripcion, cantidad, precio, categoria)
+
+            case "2":
+                print("\n--- Lista de Productos ---")
+                productos_existentes = ver_productos_db()
+                if productos_existentes:
+                    print(f"{'ID':<4} {'Nombre':<20} {'Cantidad':<10} {'Precio':<10} {'Categoría':<15} {'Descripción':<30}")
+                    print("-" * 90)
+                    for prod in productos_existentes:
+                        # Desempaquetamos la tupla (id, nombre, descripcion, cantidad, precio, categoria)
+                        id_prod, nombre_prod, desc_prod, cant_prod, prec_prod, cat_prod = prod
+                        print(f"{id_prod:<4} {nombre_prod:<20} {cant_prod:<10} {prec_prod:<10.2f} {cat_prod:<15} {desc_prod:<30}")
+                else:
+                    print("No hay productos en el inventario.")
+
+            case "3":
+                print("Saliendo del programa. ¡Hasta luego!")
+                break
+
+            case "4":
+                print("\n--- Eliminar Producto ---")
+                try:
+                    id_eliminar = int(input("Ingrese el ID del producto a eliminar: "))
+                    eliminar_producto_db(id_eliminar)
+                except ValueError:
+                    print("ID inválido. Por favor, ingrese un número.")
+
+            case "5":
+                print("\n--- Buscar Producto ---")
+                print("Buscar por:")
+                print("  1 - ID")
+                print("  2 - Nombre")
+                criterio_busqueda = input("Ingrese opción de búsqueda (1 o 2): ").strip()
+                
+                resultados = []
+                if criterio_busqueda == '1':
+                    try:
+                        id_buscar = int(input("Ingrese el ID del producto a buscar: "))
+                        resultados = buscar_producto_db('id', id_buscar)
+                    except ValueError:
+                        print("ID inválido. Por favor, ingrese un número.")
+                elif criterio_busqueda == '2':
+                    nombre_buscar = input("Ingrese parte del nombre del producto a buscar: ").strip()
+                    if nombre_buscar:
+                        resultados = buscar_producto_db('nombre', nombre_buscar)
+                    else:
+                        print("El nombre no puede estar vacío para la búsqueda.")
+                else:
+                    print("Opción de búsqueda no reconocida.")
+                    continue
+
+                if resultados:
+                    print("\nResultados de la búsqueda:")
+                    print(f"{'ID':<4} {'Nombre':<20} {'Cantidad':<10} {'Precio':<10} {'Categoría':<15} {'Descripción':<30}")
+                    print("-" * 90)
+                    for prod in resultados:
+                        id_prod, nombre_prod, desc_prod, cant_prod, prec_prod, cat_prod = prod
+                        print(f"{id_prod:<4} {nombre_prod:<20} {cant_prod:<10} {prec_prod:<10.2f} {cat_prod:<15} {desc_prod:<30}")
+                else:
+                    print("Producto no encontrado o criterio de búsqueda inválido.")
+
+            case "6": # NUEVA OPCIÓN: ACTUALIZAR PRODUCTO
+                print("\n--- Actualizar Producto ---")
+                try:
+                    id_actualizar = int(input("Ingrese el ID del producto a actualizar: "))
+                    # Primero, verificamos si el producto existe y mostramos sus datos actuales
+                    producto_existente = buscar_producto_db('id', id_actualizar)
+                    if not producto_existente:
+                        print(f"No se encontró un producto con ID {id_actualizar}.")
+                        continue
+                    
+                    # Mostrar datos actuales del producto
+                    prod_actual = producto_existente[0] # Tomamos el primer resultado
+                    print(f"\nDatos actuales del producto ID {prod_actual[0]}:")
+                    print(f"  Nombre: {prod_actual[1]}")
+                    print(f"  Descripción: {prod_actual[2]}")
+                    print(f"  Cantidad: {prod_actual[3]}")
+                    print(f"  Precio: {prod_actual[4]}")
+                    print(f"  Categoría: {prod_actual[5]}")
+                    print("\nIngrese nuevos valores (deje en blanco para mantener el actual):")
+
+                    # Pedir nuevos datos, usando los actuales como predeterminados si se deja en blanco
+                    nuevo_nombre = input(f"Nuevo Nombre ({prod_actual[1]}): ").strip() or prod_actual[1]
+                    nueva_descripcion = input(f"Nueva Descripción ({prod_actual[2]}): ").strip() or prod_actual[2]
+                    
+                    while True:
+                        nueva_cantidad_str = input(f"Nueva Cantidad ({prod_actual[3]}): ").strip()
+                        if not nueva_cantidad_str: # Si se deja en blanco, usa la actual
+                            nueva_cantidad = prod_actual[3]
+                            break
+                        try:
+                            nueva_cantidad = int(nueva_cantidad_str)
+                            if nueva_cantidad < 0: raise ValueError
+                            break
+                        except ValueError:
+                            print("Cantidad inválida. Ingrese un número entero positivo o deje en blanco.")
+                    
+                    while True:
+                        nuevo_precio_str = input(f"Nuevo Precio ({prod_actual[4]}): ").strip()
+                        if not nuevo_precio_str: # Si se deja en blanco, usa el actual
+                            nuevo_precio = prod_actual[4]
+                            break
+                        try:
+                            nuevo_precio = float(nuevo_precio_str)
+                            if nuevo_precio < 0: raise ValueError
+                            break
+                        except ValueError:
+                            print("Precio inválido. Ingrese un número (ej. 10.50) o deje en blanco.")
+
+                    nueva_categoria = input(f"Nueva Categoría ({prod_actual[5]}): ").strip() or prod_actual[5]
+
+                    actualizar_producto_db(
+                        id_actualizar,
+                        nuevo_nombre,
+                        nueva_descripcion,
+                        nueva_cantidad,
+                        nuevo_precio,
+                        nueva_categoria
+                    )
+
+                except ValueError:
+                    print("ID inválido. Por favor, ingrese un número entero.")
+                except Exception as e:
+                    print(f"Ocurrió un error inesperado al actualizar: {e}")
+
+            case "7": # NUEVA OPCIÓN: REPORTE DE BAJO STOCK
+                print("\n--- Reporte de Productos con Bajo Stock ---")
+                try:
+                    limite = int(input("Ingrese el límite de cantidad para el reporte (ej. 10): "))
+                    if limite < 0:
+                        print("El límite no puede ser negativo.")
+                        continue
+
+                    productos_bajo_stock = reporte_bajo_stock_db(limite)
+                    if productos_bajo_stock:
+                        print(f"\nProductos con cantidad igual o inferior a {limite}:")
+                        print(f"{'ID':<4} {'Nombre':<20} {'Cantidad':<10}")
+                        print("-" * 36)
+                        for prod in productos_bajo_stock:
+                            # prod es una tupla: (id, nombre, cantidad)
+                            print(f"{prod[0]:<4} {prod[1]:<20} {prod[2]:<10}")
+                    else:
+                        print(f"No se encontraron productos con cantidad igual o inferior a {limite}.")
+                except ValueError:
+                    print("Límite inválido. Por favor, ingrese un número entero.")
+
+            case _:
+                print("Opción inválida. Indique una opción válida.")
