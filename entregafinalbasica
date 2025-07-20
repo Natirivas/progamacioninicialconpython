@@ -1,0 +1,69 @@
+productos = [] # lista de productos vacía.
+
+# --- Función para actualizar la base ---
+def actualizar_base(productos_a_guardar): 
+    # Todo lo que está dentro de la función 'actualizar_base' debe ir indentado
+    with open("base.txt", "w") as base: 
+        for producto in productos_a_guardar: # Segundo nivel de indentación (dentro del 'with' y del 'for')
+            base.write(f"{producto}\n") # Tercer nivel de indentación (dentro del 'for')
+
+# --- Función para cargar productos al inicio del programa 
+def cargar_productos_desde_base():
+    try:
+        with open("base.txt", "r") as base:
+            return base.read().splitlines()
+    except FileNotFoundError:
+        return [] # Si el archivo no existe, devuelve una lista vacía
+
+# Cargamos los productos al iniciar el programa
+productos = cargar_productos_desde_base()
+
+# --- Menú principal del programa ---
+while True: # Todo lo que se ejecuta dentro del 'while' debe ir indentado!!! :(
+    print("\n ***Menú Inventario: Ingrese la opción deseada***") # Primer nivel de indentación dentro del 'while'
+    print("1- agregar producto")
+    print("2- ver productos")
+    print("3- salir")
+    print("4- eliminar productos")
+    print("5- buscar productos")
+
+    opcion = input(" Ingrese Opción:")
+
+    match opcion: # El 'match' va identado al mismo nivel que los 'print' y el 'input' de arriba
+        case "1": # Este 'case' debe ir un nivel más adentro que el 'match'
+            nuevo_producto = (input("Ingrese el nombre del producto:")).strip() # Lo que pasa en 'case "1"'
+            productos.append(nuevo_producto) # Indentado un nivel más que el 'case'
+            print(f"Producto '{nuevo_producto}' agregado.") 
+            actualizar_base(productos) # Llamamos a la función y le pasamos la lista 'productos'
+
+        case "2": # Este 'case' está al mismo nivel que el 'case "1"'
+            print("\nLista de productos:")
+            if productos: # Agregamos una comprobación para ver si hay productos
+                for producto in productos: # Indentado un nivel más que el 'case'
+                    print(f" - {producto}") # Indentado un nivel más que el 'for'
+            else:
+                print("No hay productos en el inventario.") # Si no hay productos
+
+        case "3": # Este 'case' está al mismo nivel que los demás
+            print("Saliendo del programa. ¡Hasta luego!")
+            break # Este 'break' está indentado un nivel más que el 'case'
+
+        case "4": # Este 'case' está al mismo nivel que los demás
+            eliminar_producto = input("Ingrese el nombre del producto a eliminar:").strip()
+            if eliminar_producto in productos: # Indentado un nivel más que el 'case'
+                productos.remove(eliminar_producto)
+                print(f"Producto '{eliminar_producto}' eliminado.")
+                actualizar_base(productos) # Actualiza la base después de eliminar
+            else: # El 'else' debe ir alineado con el 'if'
+                print(f"Producto '{eliminar_producto}' no encontrado.")
+
+        case "5": # Este 'case' está al mismo nivel que los demás
+            buscar = input("Ingrese el nombre del producto a buscar: ").strip()
+            if buscar in productos: # Indentado un nivel más que el 'case'
+                print(f"Producto '{buscar}' en stock.")
+            else: # El 'else' debe ir alineado con el 'if'
+                print(f"Producto '{buscar}' no encontrado.")
+
+        case _: # Este 'case'  está al mismo nivel que los demás
+            print("Opción inválida. Indique una opción válida.") 
+            
